@@ -1,0 +1,350 @@
+# 类型及其关系
+
+## 数组和切片的关系
+
+数组为值类型，切片为引用类型。切片本质上是一个**结构体**，定义如下
+
+```go
+type slices struct{
+	array unsafe.Pointer
+	len int
+	cap int
+}
+```
+
+也就是说，切片底层会指向一个数组，但切片本身拥有结构体对象的引用值。观察如下代码
+
+```go
+a:=[]int{1,2,3}
+b:=a
+fmt.Println(&a==&b) // false
+fmt.Println(&a[0]==&b[0]) //true
+b[0]==9
+fmt.Println(a[0]) //a[0]==9
+```
+
+a和b是不同的slice对象，所以地址不同；但a赋值给b后，由于是引用类型，因此将指向底层数组的指针也复制给了b。
+
+## 基本类型和引用类型
+
+基本类型包括：整数、浮点数、string、bool、[n]T类型
+
+引用类型包括：[]T、map、interface、func、channel
+
+只有引用类型的零值是nil。需要注意的是，error类型的零值也是nil，因为本质是interface
+
+## 切片的索引操作
+
+- 取最后一个元素：`s[len(s)-1]`，需要检验是否为空（长度是否为0）
+
+- 半索引切片：`s[a:]`或`s[:b]`。其中`s[a:]`相当于`s[a:len(s)]`，`s[:b]`相当于`s[:b]`，因此需要满足`a<=len(s)`，取等时为空。
+
+    也就是说，切片`s[a:b]`中**`a`的最小值为0，`b`的最小值为`len(s)`**
+
+## make和new的区别
+
+new(T)会为T类型分配空间并初始化值，返回T类型的指针，即*T
+
+make只能用于slice、map、channel，初始化值并返回该变量的引用，即T
+
+```go
+var a []int //a==nil
+b:=make([]int,0) //b==[]int{} not nil
+c:=new([]int) //c is &[]int{}
+```
+
+## struct变量比较
+
+go中以下类型的值不能比较：slice、map、function
+
+自定义的struct，有以下规则：
+
+- 类型不同不能比较
+- 通过强制类型转换后，可能可以比较（只有成员名称且类型均相同，才能强制类型转换）
+- 当成员变量含有不可比较值的值时，不能直接比较
+
+## 可寻址和不可寻址
+
+可以直接使用`&`进行取地址的对象是**可寻址**的。
+
+以下这些可以寻址：变量、指针、数组/切片元素的索引、切片
+
+以下这些不可寻址：常量、字符串、函数方法、基本类型的字面量、**map的元素**
+
+由于map元素不可寻址，因此无法通过
+
+```go
+m:=map[int][2]int{}
+m[1]=[2]int{0,1}
+//m[1][1]=123 —> compile error!!
+//correct:
+m[1]=[2]int{0,123}
+```
+
+# 函数与方法
+
+## 函数传参方式
+
+需要注意的是，Go中函数的传参均为**值传递**。以切片为例子：
+
+```go
+a:=[]int{1,2,3}
+fmt.Printf("%p\n",&a) // e.g. 0x1000
+appendInt(a,4)
+fmt.Println(a) // a={1,2,3}
+func appendInt(s []int,num int){
+    fmt.Printf("%p\n",&s) // e.g. 0x10a0
+    s = append(s)
+}
+```
+
+上述代码中，`a`和`s`两个切片的地址并不相同。如果在函数中对s进行元素修改，a也会一起修改，因为两者在底层指向的数组是相同的；但当调用`s = appends(s)`后，s指向了不同的新数组（cap更大），因此a不会发生变化。综上，当a作为参数传递给函数时，是将a这个**切片结构体的值传递**进去，复制出了新的切片结构体。
+
+## 值方法和指针方法
+
+值方法可以通过值和指针调用；指针方法只能通过指针调用
+
+而如果值是可寻址的，那么编译器会自动取地址，使得值可以调用指针方法
+
+```go
+type Foo struct {}
+func (f *Foo) pMethod() {}
+func (f Foo) vMethod() {}
+func main(){
+    vf:=Foo{}
+    pf:=&Foo{}
+    
+    vf.vMethod() //✔
+    vf.pMethod() //编译器自动变为(&vf).pMethod()
+    
+    pf.vMethod() //编译器自动变为(*pf).vMethod()
+    pf.pMethod() //✔
+}
+
+```
+
+总结：遇事不决，定义指针方法
+
+# 内置库
+
+## 类型转换 strconv
+
+- int型和浮点型转换：`int(3.3)`、`float64(6)`
+- 字符串类型（通过内置`strconv`包）：
+    - 字符串转int型：`strconv.Atoi("123")` （内部为`ParseInt函数`）//第二个值返回error
+    - 字符串转浮点型：`strconv.ParseFloat("123.56",64)` //第二个值返回error
+    - int型转字符串：`strconv.Itoa(123)` （内部为`FormatInt`函数）
+    - 浮点型转字符串：`strconv.FormatFloat(123.56,'f',2,64)` //具体参数含义可看函数文档
+
+## 排序
+
+int切片排序：`sort.Ints(intSlice)`，逆序：`sort.Sort(sort.Reverse(sort.IntSlice(intSlice)))`
+
+浮点数切片排序：`sort.Float64s(floatSlice)`
+
+string切片排序：`sort.Strings(strSlice)`
+
+在1.21后，可以用内置的`slices`包进行排序：
+
+- `slices.Sort(s)`，同时也可以调用`slices.SortFunc(s,fn)`自定义compare函数
+- 如果想要逆序排序，可以`slices.Sort(s); slices.Reverse(s)`
+
+## 字符串操作
+
+Go中string为不可更改类型，可以通过索引获取，但不可修改。需要注意的是，string底层是[]byte（即[]uint8）。
+
+- 字符串拆分为切片：strings.Split(s string, seq string)
+- 字符串根据空白字符拆分：strings.Fields(s string)（空白字符包括空格、\t、\r等等）
+- slice拼接为字符串：strings.Join(s []string, conn string)
+- 取子字符串：通过索引 s[a:b]
+
+# channel
+
+## select与channel
+
+select和channel结合使用（有时会和for{}一起使用）。
+
+case触发的条件：**通道可以接收或者发送**
+
+```go
+select{
+    //当case中所有通道均可用时，会随机选择一个进行接受
+    //如果均不可用且有default分支，则执行default分支
+	case <-ch1:
+    	//do something
+	case x:=<-ch2:
+    	//do something with x
+    case y,ok:=<-ch3:
+        if !ok{
+            return 
+        }
+    	// do something with y
+    	// 当ch3已经close后，第一个值返回chan类型的零值，第二个值会返回false
+    default:
+    //do something
+}
+```
+
+此外还有两点
+
+```go
+var nilChan chan bool //nilChan is nil
+stopChan:=make(chan bool)
+go func(){
+    time.Sleep(1*time.Second)
+    close(stopChan)
+}()
+for {
+    select{
+        case <-nilChan:
+        	//永远不会触发，select自动忽略nil的chan
+        case <-stopChan:
+        	//stopChan关闭时会触发此case
+        	// do something
+    }
+}
+
+```
+
+综上，select中使用channel时，有以下这些情况能接收到值：
+
+- 有其他阻塞等待发送给channel的命令
+- channel已经关闭
+
+## range channel
+
+对于一个有缓存channel，如果用`for x:=range ch`去接受ch里的值时，会持续接收直到ch关闭。因此，必须要设置关闭ch的语句，否则会发生死锁。在for range之前直接关闭也可以，这样会将ch里的值全部读完、结束循环。
+
+## for range中的坑
+
+1. range的循环变量会被复用，也就是说每次循环中变量在同一个地址，而值不同
+2. range遍历的切片/map是原变量的复制，因此在循环中对其修改，不影响循环次数
+
+
+# map的底层实现
+
+## 底层代码和结构
+
+map的底层结构体是hmap，代码如下：
+
+```go
+type hmap struct {
+ 	count     int // 元素个数，调用 len(map) 时，直接返回此值
+	flags     uint8
+	B         uint8 // buckets 的对数 log_2
+	noverflow uint16
+	hash0     uint32
+	buckets    unsafe.Pointer // 指向 buckets 数组，大小为 2^B；元素为0则指针为nil
+	oldbuckets unsafe.Pointer //用于扩容 buckets
+	nevacuate  uintptr
+	extra *mapextra // optional fields
+}
+```
+
+`buckets`是一个指针，指向的是一个bmap结构体数组，也就是具体的**bucket**。数组的长度即为 $2^B$。
+
+```go
+type bmap struct {
+	tophash [bucketCnt]uint8
+}
+```
+
+<img src="https://golang.design/go-questions/map/assets/0.png" alt="hashmap bmap" style="zoom: 33%;" />
+
+在编译时，会创建一个新的bmap结构，用于存储key-value值。
+
+```go
+type bmap struct {
+    topbits  [8]uint8
+    keys     [8]keytype
+    values   [8]valuetype
+    pad      uintptr
+    overflow uintptr
+}
+```
+
+bmap的结构如图，其中前8个字节组成 tophash / topbits 字段，用于进行Hash匹配。key和value各自存放，这种是避免每个key-value对都需要paddingde情况。
+
+每个bucket最多存放8个key-value对。当有新的key-value要放入该bucket，需要构建一个新的bucket，通过*overflow指针连接。
+
+## GET / UPDATE 操作
+
+get操作的大致流程：
+
+1. 计算Key的哈希值，64位系统则哈希值为64比特
+2. 通过哈希值最后 **B** 位确定在几号bucket。例如B=4，取最后4位0101，则在5号桶，取 [5]bmap
+3. 通过哈希值前 **8** 位，与topbits字段进行对比。例如发现和 topbits[3]相同，则偏移量为3
+4. 通过上一步找出的偏移量，访问对应的key，和代查找的key进行完整匹配。如果相同，则获取对应value，或者更新值
+5. 如果key不同，或是该bucket没有对应topbits，则访问*overflow的下一个桶
+
+## PUT操作
+
+PUT操作定位 bucket 的位置和GET操作相同。下面操作：
+
+1. 遍历当前 bucket 的topbits，找到第一个可以插入的位置存储数据。
+2. 如果当前 bucket 满，则创建新的 bucket 存放数据，通过*overflow连接
+
+两个不同key的哈希值后 **B** 位相同，则表示发生了哈希冲突，而 bucket 中8个位置则是解决哈希冲突的方法。
+
+<img src="https://golang.design/go-questions/map/assets/2.png" alt="mapacess" style="zoom:33%;" />
+
+## 溢出 bucket
+
+溢出的bucket存放在 hmap.extra结构中，overflow字段指向bmap切片，所有bmap的bucket均为溢出bucket。当PUT操作产生溢出bucket时，在hmap.extra.overflow中新建一个bucket，并且将已满的bucket最后的*overflow指针指向这个bucket
+
+# 垃圾回收
+
+## 常见方式
+
+- 追踪式：从根对象出发，根据对象的引用关系，一步步扫描，从而确定需要保留的对象和可回收对象。此方式语言：Go、Java等
+- 引用计数式：每个对象包含一个被引用计数器，当计数器归零时自动被回收。
+
+> 根对象包括：全局变量、执行栈、寄存器（可能表示指针）
+
+## 三色标记法
+
+从回收器的角度，对象有三种类型，如果用不同的颜色区分：
+
+- 白色对象：**可能被回收**。未被回收器访问到的对象。开始阶段所有对象均为白色，访问结束时白色对象均不可达。
+- 灰色对象：已经被访问到的对象，但回收器还需要对它们的指针进行进一步扫描。
+- 黑色对象：**不会被回收**。已被访问到的对象，并且所有指针字段也已经被扫描。因此黑色对象中的任何一个指针不能直接指向白色对象。
+
+灰色可以视为一个“波面”，在访问作为黑色节点和白色节点的缓冲。在GC开始时，所有对象均为白色；扫描到的对象标记为灰色。当对象的所有子节点均完成扫描时后，该对象被标记为黑色。
+
+当整个堆遍历完成后，只剩下黑色对象和不可达的白色对象，回收白色对象。
+
+![三色标记法全貌](https://golang.design/go-questions/memgc/assets/gc-blueprint.png)
+
+## 强弱不变性
+
+当垃圾回收和用户代码并发运行时，可能破坏垃圾回收的正确性。三色标记算法中，当以下两个条件同时满足时会破坏垃圾回收的正确性，如图：
+
+- 条件1：赋值器让黑色对象引用白色对象（令C指向B）
+- 条件2：灰色对象到达白色对象的未访问路径被破坏（删除A指向B的路径）
+
+同时满足后，本来应该访问到的白色对象会被回收
+
+![image-20231129192413179](C:\Users\xiaoti\AppData\Roaming\Typora\typora-user-images\image-20231129192413179.png)
+
+因此有以下两个性质：
+
+- 强三色不变性：满足原有的三色不变性，即条件1、2均不满足
+- 弱三色不变性：最多只让条件1生效，也就是必须保证存在能到达可达白色对象的路径。
+
+因此，还需要引入黑色赋值器和灰色赋值器。
+
+## 写屏障
+
+Go采用了下述两种写屏障的混合。基本思想是：对正在被覆盖的对象进行着色，且如果当前栈未扫描完成，则同样对指针进行着色。
+
+### Dijkstra 插入屏障
+
+该屏障的基本思想是避免条件1，也就是避免让黑色对象引用白色对象。
+
+大致来说，如果某对象被黑色对象引用，则将其标记为灰色。
+
+ ### Yuasa 删除屏障
+
+该屏障的基本思想是避免条件2，也就是防止丢失灰色对象到白色对象的路径。
+
+简单来说，在删除灰色对象对子对象的引用之前，将子对象标记为灰色
