@@ -324,7 +324,7 @@ PUT操作定位 bucket 的位置和GET操作相同。下面操作：
 
 同时满足后，本来应该访问到的白色对象会被回收
 
-![image-20231129192413179](C:\Users\xiaoti\AppData\Roaming\Typora\typora-user-images\image-20231129192413179.png)
+![image-20231129192413179.png](https://s2.loli.net/2023/12/03/UjkGCvIm6p2writ.png)
 
 因此有以下两个性质：
 

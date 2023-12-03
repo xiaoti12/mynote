@@ -53,7 +53,7 @@ batch涉及到的参数：
 
 一个基本的原则是：一个partition不会被多个consumer消费。因此，partition与（同一group的）consumer是一对一或者多对一的关系。
 
-![image-20231125161731350](C:\Users\xiaoti\AppData\Roaming\Typora\typora-user-images\image-20231125161731350.png)
+![image-20231125161731350.png](https://s2.loli.net/2023/12/03/HzlkdW7ObT8Zcir.png)
 
 # 再均衡（rebalance）
 
@@ -114,4 +114,37 @@ producer有三种ACK机制，延迟由好到坏，可靠性由坏到好：
 - 0：producer不需要leader回复，发送即认为发送成功，发送下一批
 - 1：leader收到消息，写入本地Log后，向producer返回确认，默认机制
 - -1：leader需要保证ISR的消息均已同步，才向producer返回确认
+
+# 常见参数配置
+
+## Broker端
+
+- auto.create.topics.enable：是否允许自动创建topic（producer和consumer使用不存在topic）
+- broker.id：本broker的ID，不设置则生成唯一ID
+- logs.dirs：消息存储位置
+- log.retention.bytes：设置日志磁盘占用的阈值，超出进行日志段删除，默认为-1，即不删除
+- log.retention.hours：日志的最长保存时间
+- message.max.bytes：broker可以批量处理消息的最大字节数
+- num.partitions：每个topic的默认分区数，默认为1
+- batch.size：缓冲区一批数据的最大值
+
+## producer端
+
+- acks：向leader写入数据时的ACK方式
+- compression.type：消息的压缩方式，默认不压缩
+- batch.size：缓冲区一批数据的最大值
+- max.request.size：发往broker单个请求的最大尺寸（包含多个信息）
+
+## consumer端
+
+- group.id：该consumer所属的group
+- allow.auto.create.topics：订阅不存在topic时是否自动创建topic（需要broker支持）
+- auto.offset.reset：kafka中没找到对应offset时（例如一个新的group），采取的策略
+    - earliest：重置到最早可用消息的offset
+    - latest：重置到最新消息的offset，默认值
+    - none：broker抛出异常
+- enable.auto.commit：是否定期提交offset，默认为true
+- auto.commit.interval.ms：设置了自动提交offset的时间间隔
+- fetch.max.bytes：从broker获取到的消息最大字节，受message.max.bytes影响
+- max.poll.records：一次poll能拉取到的消息最大条数
 
