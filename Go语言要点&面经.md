@@ -162,7 +162,7 @@ Go中string为不可更改类型，可以通过索引获取，但不可修改。
 
 # channel
 
-- channel为nil时读写操作会永久阻塞
+- 读写nil的channel会永久阻塞
 - 关闭nil的channel会引发panic
 - 对于已经closed的channel，写会引发panic；无缓存channel会返回类型的零值，有缓存channel会一直读到空，返回零值
 
@@ -205,7 +205,7 @@ for {
         case <-nilChan:
         	//永远不会触发，select自动忽略nil的chan
         case <-stopChan:
-        	//stopChan关闭时会触发此case
+        	//stopChan关闭状态会触发此case
         	// do something
     }
 }
@@ -313,11 +313,11 @@ PUT操作定位 bucket 的位置和GET操作相同。下面操作：
 ###  扩容大小
 
 - **双倍扩容**：针对装载因子的条件1，新建一个bucket数组，大小翻倍（即B增加1），旧buckets数据重新计算位置，迁移到新的bucket。
-- **等量扩容**：针对溢出bucket数量过多，不扩大容量，而是搬迁、重新排布k-v对，提高bucket利用率。
+- **等量扩容**：针对溢出bucket数量过多的条件2，不扩大容量，而是搬迁、重新排布k-v对，提高bucket利用率。
 
 ### 扩容过程
 
-go中map的扩容是**渐进式**的，不会一次性搬迁完毕，每次最多搬迁2个。`hashGrow()`函数会创建好新的bucket，并将老的buckets挂到oldbuckets字段上。
+go中map的扩容是**渐进式**的，不会一次性搬迁完毕，每次最多搬迁2个。`hashGrow()`函数会首先创建好新的bucket，并将老的buckets挂到oldbuckets字段上。
 
 实际的搬迁是在`growWork()`函数里，每次修改、插入、删除key时，会尝试搬迁buckets。首先需要先检查oldbuckets是否搬迁完毕（也就是是否为nil）。
 
