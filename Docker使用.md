@@ -1,4 +1,4 @@
-个人使用来看，Docker的使用主要可以分为三个部分：`docker image`、`docker container`和`docker-compose`。其中，Image（镜像）是一个完整的OS环境，其中安装了运行服务必要的依赖。而每次启动Image时，会生成一个相应的Container（容器），不同的container之间相互独立。
+个人使用来看，Docker的使用主要可以分为三个部分：`docker image`、`docker container`和`docker-compose`。其中，Image（镜像）是一个容器环境，其中安装了运行服务必要的依赖。而每次启动Image时，会生成一个相应的Container（容器），不同的container之间相互独立。
 
 # Image
 

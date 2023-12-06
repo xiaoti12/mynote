@@ -57,7 +57,7 @@ c:=new([]int) //c is &[]int{}
 
 ## struct变量比较
 
-go中以下类型的值不能比较：slice、map、function
+go中以下类型的值**不能比较**：slice、map、function
 
 自定义的struct，有以下规则：
 
@@ -164,7 +164,7 @@ Go中string为不可更改类型，可以通过索引获取，但不可修改。
 
 - channel为nil时读写操作会永久阻塞
 - 关闭nil的channel会引发panic
-- 对closed后的channel读写会panic
+- 对于已经closed的channel，写会引发panic；无缓存channel会返回类型的零值，有缓存channel会一直读到空，返回零值
 
 ## select与channel
 
@@ -241,7 +241,7 @@ type hmap struct {
 	noverflow uint16
 	hash0     uint32
 	buckets    unsafe.Pointer // 指向 buckets 数组，大小为 2^B；元素为0则指针为nil
-	oldbuckets unsafe.Pointer //用于扩容 buckets
+	oldbuckets unsafe.Pointer // 用于扩容 buckets
 	nevacuate  uintptr
 	extra *mapextra // optional fields
 }
@@ -269,9 +269,11 @@ type bmap struct {
 }
 ```
 
-bmap的结构如图，其中前8个字节组成 tophash / topbits 字段，用于进行Hash匹配。key和value各自存放，这种是避免每个key-value对都需要paddingde情况。
+bmap的结构如图，其中前8个字节组成 tophash / topbits 字段，用于进行Hash匹配。key和value各自存放，这种是避免每个key-value对都需要padding的情况。
 
 每个bucket最多存放8个key-value对。当有新的key-value要放入该bucket，需要构建一个新的bucket，通过*overflow指针连接。
+
+<img src="https://golang.design/go-questions/map/assets/2.png" alt="mapacess" style="zoom:33%;" />
 
 ## GET / UPDATE 操作
 
@@ -292,11 +294,36 @@ PUT操作定位 bucket 的位置和GET操作相同。下面操作：
 
 两个不同key的哈希值后 **B** 位相同，则表示发生了哈希冲突，而 bucket 中8个位置则是解决哈希冲突的方法。
 
-<img src="https://golang.design/go-questions/map/assets/2.png" alt="mapacess" style="zoom:33%;" />
-
 ## 溢出 bucket
 
 溢出的bucket存放在 hmap.extra结构中，overflow字段指向bmap切片，所有bmap的bucket均为溢出bucket。当PUT操作产生溢出bucket时，在hmap.extra.overflow中新建一个bucket，并且将已满的bucket最后的*overflow指针指向这个bucket
+
+## 扩容机制
+
+### 扩容触发
+
+有两个触发扩容的条件，任意满足：
+
+1. 装载因子（loadFactor）超过阈值6.5。装载因子 = count / 2^B，也就是每个桶的平均k-v对个数
+
+2. 溢出bucket过多。不能超过`2^min(B,15)`个。就是说，`B<=15`时，溢出bucket不能超过正常bucket；`B>15`时，溢出bucket不能超过`2^15`。
+
+条件2是对条件1的补充。当map总元素少、但bucket数量多时，值存储的很稀疏，查找、插入效率低。
+
+###  扩容大小
+
+- **双倍扩容**：针对装载因子的条件1，新建一个bucket数组，大小翻倍（即B增加1），旧buckets数据重新计算位置，迁移到新的bucket。
+- **等量扩容**：针对溢出bucket数量过多，不扩大容量，而是搬迁、重新排布k-v对，提高bucket利用率。
+
+### 扩容过程
+
+go中map的扩容是**渐进式**的，不会一次性搬迁完毕，每次最多搬迁2个。`hashGrow()`函数会创建好新的bucket，并将老的buckets挂到oldbuckets字段上。
+
+实际的搬迁是在`growWork()`函数里，每次修改、插入、删除key时，会尝试搬迁buckets。首先需要先检查oldbuckets是否搬迁完毕（也就是是否为nil）。
+
+对于条件2，由于buckets数量不变，因此对应的buckets需要不变（从溢出bucket挪到正常bucket）
+
+对于条件1，需要重新计算key对应的bucket，进行迁移。
 
 # 垃圾回收
 
@@ -327,6 +354,8 @@ PUT操作定位 bucket 的位置和GET操作相同。下面操作：
 
 - 条件1：赋值器让黑色对象引用白色对象（令C指向B）
 - 条件2：灰色对象到达白色对象的未访问路径被破坏（删除A指向B的路径）
+
+> 对于条件1，如果让白色对象被黑色对象而不是灰色对象引用，则不会被扫描，因为回收器认为黑色对象的子节点已经全扫描完成
 
 同时满足后，本来应该访问到的白色对象会被回收
 
@@ -402,7 +431,10 @@ go在早期使用的调度模型，性能较差。线程M想要执行协程G，�
 
 ## 调度基本策略
 
-- **线程复用**：当前M无可用的G时，会从其他M对应的P偷取G，而不是销毁线程；当前M因为G的系统调用被阻塞时，释放当前P、转移给其他空闲M
+- **线程复用**
+    - working stealing：当前M无可用的G时，会从其他M对应的P偷取G，而不是销毁线程
+    - hand off：当前M因为G的系统调用被阻塞时，释放当前P、转移给其他空闲M
+
 - **并行运行**：`GOMAXPROCS`限制了P的数量，即并发的程度
 - **抢占**：一个G最多占用CPU 10ms，防止其他G被饿死
 - **全局G队列**：GMP模型中仍然保持了全局G队列。当P执行的G创建的G'放不进P队列中，会放入全局G队列；M对应P的队列为空时，会从全局G队列获取
@@ -412,7 +444,7 @@ go在早期使用的调度模型，性能较差。线程M想要执行协程G，�
 1. 通过`go func()`创建一个goroutine
 2. 新的G优先保存在当前P的本地队列，如果队列已满，则从队列取一半+新的G，放到全局G队列
 3. M从对应P队列中弹出一个可执行G，如果为空则从全局G队列获取，也为空则从其他P本地队列偷取，如果两个为空则由G0进行自旋（最多`GOMAXPROCS`个M/P在自旋）
-4. G将相关运行参数
+4. G将相关运行参数给M
 5. 当G进行系统调用导致对应M阻塞时，从休眠队列唤醒一个M'，或者创建新的M'，和当前P绑定
 6. 当前G执行完后，将结果返回并被销毁。M会从P本地队列获取新的G，返回第3步
 
