@@ -75,6 +75,8 @@ go中以下类型的值**不能比较**：slice、map、function
 
 由于map元素不可寻址，因此无法通过
 
+> 因为map中key不存在时返回零值，零值为常量；并且map存在k-v迁移的可能，因此不能寻址
+
 ```go
 m:=map[int][2]int{}
 m[1]=[2]int{0,1}
@@ -161,6 +163,8 @@ Go中string为不可更改类型，可以通过索引获取，但不可修改。
 - 取子字符串：通过索引 s[a:b]
 
 # channel
+
+## nil与close
 
 - 读写nil的channel会永久阻塞
 - 关闭nil的channel会引发panic
@@ -325,6 +329,8 @@ go中map的扩容是**渐进式**的，不会一次性搬迁完毕，每次最�
 
 对于条件1，需要重新计算key对应的bucket，进行迁移。
 
+> redis底层的哈希表也是渐进式的
+
 # 垃圾回收
 
 ## 常见方式
@@ -453,4 +459,41 @@ go在早期使用的调度模型，性能较差。线程M想要执行协程G，�
 M0是启动程序后的主线程，负责初始化操作、启动第一个M。之后和其他M一起执行程序。
 
 G0是每次启动M时第一个创建的goroutine，仅用于调度。每个M都会有自己的G0，全局G0是M0的G0
+
+# Channel的底层实现
+
+## 数据结构
+
+channel的底层为hchan结构体，包含如下重要字段：
+
+- qcount：缓存的元素数量
+- buf：指向底层循环数组，针对有缓存类型
+- closed：是否被关闭
+- sendx：已发送元素在循环数组里的索引，针对有缓存类型
+- recvx：已接收元素在循环数组里的索引，针对有缓存类型
+- sendq：等待发送的goroutine队列
+- recvq：等待接收的goroutine队列
+- lock：互斥锁，保证线程安全
+
+sendq和recvq为waitq队列，waitq是一个sudog链表结构，sudog封装了goroutine
+
+channel的数据存放在堆上，可以保证在不同的函数内channel访问同一块内存
+
+![chan data structure](https://golang.design/go-questions/channel/assets/0.png)
+
+## 发送操作
+
+1. 如果channel为nil，当前goroutine会被调度器挂起；如果channel已经closed，触发panic
+2. 如果channel为有缓存且有空位，则数据会被保存到buf循环数组中
+3. 如果channel为无缓存或无空位，则goroutine（G1）被接入到sendq队列中，然后被调度器挂起，释放绑定M1
+4. G2从channel接收（有空位）后，从sendq队列弹出一个sudog（即封装的G1），填充循环数组，将G1放入G2对应P2的本地队列中
+
+## 接受操作
+
+和发送操作基本一致。
+
+1. 如果channel为nil，goroutine被挂起；如果channel已经closed，返回零值和false
+2. 如果是有缓存，直接从buf循环数组读取
+3. 如果是无缓存或无数据，则阻塞，被接入recvq队列
+4. 下一个发送goroutine将其唤醒
 
