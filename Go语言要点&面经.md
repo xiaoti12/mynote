@@ -488,6 +488,8 @@ channel的数据存放在堆上，可以保证在不同的函数内channel访问
 3. 如果channel为无缓存或无空位，则goroutine（G1）被接入到sendq队列中，然后被调度器挂起，释放绑定M1
 4. G2从channel接收（有空位）后，从sendq队列弹出一个sudog（即封装的G1），填充循环数组，将G1放入G2对应P2的本地队列中
 
+> 挂起goroutine用的是`gopark`函数
+
 ## 接受操作
 
 和发送操作基本一致。
