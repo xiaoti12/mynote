@@ -217,6 +217,8 @@ binlog记录了数据库表结构变更和表数据修改的日志，通过追�
 - prepare：将事务ID写入redo log并持久化到磁盘，状态设为prepare
 - commit：将事务ID写入binlog并持久化到磁盘，将redo log的状态设置为commit
 
+当发生崩溃时，检查prepare状态的redo log的事务ID（XID）是否存在于binlog中，存在则提交，不存在则回滚
+
 # 事务的并行与隔离
 
 ## 并行事务可能的问题
