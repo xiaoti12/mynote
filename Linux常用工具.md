@@ -30,6 +30,10 @@
 
 删除会话：`tmux kill-session -t [session-name]`
 
+设置滚轮滚动窗口：`Ctrl+b -> :`打开命令模式，输入`set -g mouse on`  
+
+选中复制：按住`shift`，选中后复制
+
 # Crontab
 
 编辑：crontab -e
