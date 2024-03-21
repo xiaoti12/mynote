@@ -83,6 +83,10 @@ kafka发送消息时，需要确定topic、data，可以选择partition和key。
 
 对于每个partition，会使用offset作为唯一表示保证顺序性，表示consumer当前在该partition消费到的位置。当consumer拉取某消息后，默认会自动提交offset（`enable.auto.commit=true`）。
 
+### 重复消费
+
+### 未消费
+
 # 主从同步
 
 副本（replica）以分区partition作为基本单位，包含一个leader和follower。
