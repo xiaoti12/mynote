@@ -55,6 +55,12 @@ b:=make([]int,0) //b==[]int{} not nil
 c:=new([]int) //c is &[]int{}
 ```
 
+## 内存逃逸
+
+函数中变量的内存一般分配栈内存，随函数返回而回收。当变量内存分配在堆上时，称为发生了内存逃逸。
+
+最容易出现内存逃逸的情况：多级间接赋值，即`Data.Field = Value`，其中Data和Field均为引用类型，即[]T、map、interface、func、channel。
+
 ## struct变量比较
 
 go中以下类型的值**不能比较**：slice、map、function
@@ -443,7 +449,7 @@ go在早期使用的调度模型，性能较差。线程M想要执行协程G，�
 ## 调度基本策略
 
 - **线程复用**
-    - working stealing：当前M无可用的G时，会从其他M对应的P偷取G，而不是销毁线程
+    - working stealing：当前M无可用的G时，会从其他M对应的P偷取G（当全局G队列为空时），而不是销毁线程
     - hand off：当前M因为G的系统调用被阻塞时，释放当前P、转移给其他空闲M
 
 - **并行运行**：`GOMAXPROCS`限制了P的数量，即并发的程度
