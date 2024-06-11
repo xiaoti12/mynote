@@ -36,3 +36,4 @@ proxychains curl www.google.com
 <!doctype html><html itemscope="" itemtype="http://schema.org/WebPage" lang="zh-HK"><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
 ```
 
+同时可以在conf文件中反注释掉quiet_mode ，这样不会每个请求都有提示信息
