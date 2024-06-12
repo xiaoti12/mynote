@@ -45,10 +45,27 @@ PyG需要初始化`Dataset`时传入数据存放的路径，并这个路径下�
 
 返回存储处理过的数据文件的文件名列表，需要能在`processed_dir`文件夹中找到
 
-- process()：
+### process()：
 
 调用读取函数，将数据包装成Data类，处理数据，保存处理好的数据到`processed_dir`下。数据集原始的格式可能是 csv 或者 mat，在`process()`函数里可以转化为 pt 格式的文件，这样在`get()`方法中就可以直接使用`torch.load()`函数读取 pt 格式文件。
 
+官网文档的示例代码（新版本PyG）为
+```python
+def process(self):
+        # Data类的list，每个Data即为封装的图
+        data_list = [...]
+
+        if self.pre_filter is not None:
+            data_list = [data for data in data_list if self.pre_filter(data)]
+
+        if self.pre_transform is not None:
+            data_list = [self.pre_transform(data) for data in data_list]
+
+        self.save(data_list, self.processed_paths[0])
+```
+其中，`pre_filter`和`pre_transform`是初始化dataset时传入的预处理方法。
+
+当PyG版本>=2.4时，torch.save和torch.load被封装为Dataset.save和Dataset.load
 
 
 
@@ -66,3 +83,15 @@ G = to_networkx(data, to_undirected=True)
 visualize_graph(G, color=data.y)
 ```
 
+## mini-batch
+使用`Dataloader`可以将数据集分为多个mini-batch，示例代码
+```python
+from torch_geometric.data import DataLoader
+
+loader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+for batch in loader:
+    batch
+    # Batch(batch=[1082], edge_index=[2, 4066], x=[1082, 21], y=[32])
+```
+`Batch`继承自`Data`，多了个列向量属性`batch`，将每个元素映射到mini-batch的相应图
