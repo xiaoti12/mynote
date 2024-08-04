@@ -342,6 +342,14 @@ read view是数据库的一个快照，用于保存某个时刻的信息，核�
 
 ![img](https://awps-assets.meituan.net/mit-x/blog-images-bundle-2016/52610d6d.png)
 
+
+
+## 问题和解决
+
+- 分布式事务问题：使用XA协议和两阶段提交，达成最终一致性
+- 跨节点join查询：通过业务来实现join查询逻辑；字段冗余
+- 全局主键冲突：使用UUID或者snowflake生成唯一ID
+
 # 数据库三范式
 
 ## 第一范式
