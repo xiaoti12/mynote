@@ -91,6 +91,14 @@ m[1]=[2]int{0,1}
 m[1]=[2]int{0,123}
 ```
 
+## interface与nil
+`interface{}`包含两个部分：`type`和`data`。例如
+```go
+a interface{} = 25
+```
+其中type为int，data为25。因此进行nil判断时，需要type和data均为nil，`interface{}==nil`才成立
+
+
 # 函数与方法
 
 ## 函数传参方式
