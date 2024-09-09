@@ -156,11 +156,13 @@ TIME_WAIT是最开始主动关闭连接的一方所拥有的状态。TIME_WAIT�
 
 TCP为了保证可靠传输，使用了如下机制：
 
-- 序号和确认号：TCP会通过SEQ和ACK来保证数据的一致性，回复ACK来表示已经接收到该数据包
+- 序号和确认号：TCP会通过SEQ和ACK来保证数据的一致性，回复ACK来表示已经接收到该数据包。A->B的ACK为X、SEQ为Y、Len为L，则B->A的ACK为Y+L、SEQ为X，即ACK为期望对方下次发送的SEQ
 - 超时重传：如果发送方在定时器的时间内，没收到ACK确认则重传
 - 滑动窗口：用于缓存待发送或接收数据，可以互相通知
 - 流量控制：接受方会回复自己的剩余窗口大小，发送方得知对方的处理能力，控制发送的速度
 - 拥塞控制：慢启动和快速恢复
+
+![快速重传和快速恢复](https://cdn.xiaolincoding.com/gh/xiaolincoder/ImageHost4@main/%E7%BD%91%E7%BB%9C/%E6%8B%A5%E5%A1%9E%E5%8F%91%E7%94%9F-%E5%BF%AB%E9%80%9F%E9%87%8D%E4%BC%A0.drawio.png?image_process=watermark,text_5YWs5LyX5Y-377ya5bCP5p6XY29kaW5n,type_ZnpsdHpoaw,x_10,y_10,g_se,size_20,color_0000CD,t_70,fill_0)
 
 # HTTP2和HTTP3
 
@@ -179,6 +181,22 @@ TCP为了保证可靠传输，使用了如下机制：
 - 无队头阻塞：复用的stream之间不依赖，小序号包丢失后，不会阻塞后面的报文
 - 连接速度：QUIC协议握手减少到1 RTT、TLS升级到1.3减少握手次数
 - 连接迁移：不使用四元组来标识连接，而是使用唯一连接ID，这样设备网络变化后，仍可以保留上下文信息
+
+# 其他网络协议
+
+## RPC
+
+RPC和HTTP的区别：
+
+- 服务发现：HTTP需要DNS寻找IP；RPC需要注册中心
+- 底层连接：HTTP基于TCP，可以保持长连接；RPC使用连接池，复用连接
+- 内容编码：HTTP使用语义编码；RPC采用二进制序列化编码，例如protobuf
+
+## SSE和WebSocket
+
+SSE和websocket都可以用于服务器主动推送数据
+
+
 
 
 

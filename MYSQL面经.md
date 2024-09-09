@@ -246,9 +246,11 @@ binlog记录了数据库表结构变更和表数据修改的日志，通过追�
 
 mysql针对幻读现象的解决方法：
 
-对于普通select语句，通过MVCC解决。简单来说，会在事务开始时创建一个数据快照。
+- 普通select语句，通过MVCC解决。简单来说，会在事务开始时创建一个数据快照。
 
-针对当前读select for update语句（不创建快照），通过next-key lock（间隙锁+记录锁）解决。此时其他记录无法对next-key lock的范围内修改记录
+- 当前读select for update语句（不创建快照），通过next-key lock（间隙锁+记录锁）解决。此时其他记录无法对next-key lock的范围内修改记录。
+
+加锁的基本单位是next-key锁，一些情况会退化为记录锁或间隙锁
 
 # 锁
 
