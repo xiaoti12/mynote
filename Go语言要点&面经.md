@@ -249,6 +249,32 @@ for {
 
 2. range遍历map时，顺序是无序的，因为会随机选择一个bucket开始
 
+# Goroutine并发
+
+## 防止goroutine泄露
+
+goroutine可能因为如下原因泄露：
+
+- channel阻塞而无法退出
+- goroutine进入死循环
+- select在所有case上阻塞
+
+排查方法：
+
+- `runtime.NumGoroutine()`获取当前goroutine数量
+- pprof确认泄露的地方
+
+解决方案：
+
+- 确保channel正确同步
+- 由其他线程通知goroutine正确退出，例如关闭channel
+
+## 并发模型
+
+- CSP模型：通过通信来实现共享内存
+- 生产者/消费者模型
+- 订阅/发布模型
+- mutex互斥锁实现内存共享
 
 # map的底层实现
 

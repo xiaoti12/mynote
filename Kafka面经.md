@@ -11,19 +11,28 @@ kafka包含以下基本概念：
 
 <img src="https://www.cloudkarafka.com/img/blog/apache-kafka-partition.png" alt="Part 1: Apache Kafka for beginners - What is Apache Kafka? - CloudKarafka,  Apache Kafka Message streaming as a Service" style="zoom: 33%;" />
 
-# 高性能
+# 高性能和高可靠
 
-## PageCahe
+## 高性能
+
+### PageCache
 
 kafka利用了操作系统的pagecache，当有读写操作时，先通过PageCache进行，减少磁盘访问。操作系统会定期异步将pagecache的数据固定到磁盘。
 
-## 顺序写
+### 顺序写
 
 由于磁盘的特性，顺序读写会比随机读写的速度快。而kafka将数据固定到磁盘后，是追加到末尾的方式，因此速度更快（*注：和数据库B+树不同的地方*）
 
-## 零拷贝
+### 零拷贝
 
 在kafka将数据发送给消费者时，会把消息从disk或者pagecache读到内核区，此时不会复制到用户去，而是直接写入内核socket，避免内核区和用户区的切换
+
+## 高可靠
+- topic下分为多个partition，以partition为单位进行副本同步
+- leader将数据同步到ISR副本，同时结合ack机制（0、1、-1）
+- 所有消息持久化到磁盘，通过追加方式写入
+- 为producer分配PID，消息配置seq，broker端根据PID和seq实现生产幂等
+- 消费者通过提交offset，保证消费不丢失
 
 # 生产者运行流程
 
