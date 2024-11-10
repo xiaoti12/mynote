@@ -76,14 +76,25 @@ def process(self):
 
 通过`networkx`库来实现可视化，例子如下
 
+需要注意的是，data成员属性edge_index需要表示为[2, edge_num]的COO张量格式
+
 ```python
 from torch_geometric.utils import to_networkx
+import networkx as nx
+import matplotlib.pyplot as plt
 
 G = to_networkx(data, to_undirected=True)
-visualize_graph(G, color=data.y)
+nx.draw(G)
+plt.show()
 ```
 
+nx.draw参数：
+
+- node_color：颜色、RGB值或者列表（根据列表中的值区分不同节点颜色）
+- with_labels：标注出每个节点的编号
+
 ## mini-batch
+
 使用`Dataloader`可以将数据集分为多个mini-batch，示例代码
 ```python
 from torch_geometric.data import DataLoader
