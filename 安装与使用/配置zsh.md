@@ -14,6 +14,7 @@ sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install
 
 ![image-20240602202520599](C:\Users\xiaoti\AppData\Roaming\Typora\typora-user-images\image-20240602202520599.png)
 
+## 插件
 安装历史自动补全：`git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-autosuggestions`
 
 在`~/.zshrc`中修改：

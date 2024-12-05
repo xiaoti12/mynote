@@ -12,6 +12,8 @@ chmod u+x /usr/local/bin
 
 此外还可以使用`clash-dashboard`服务，下载到特定目录后修改或添加`config.yaml`目录里的`external-ui`和`secret`项，通过URL`ip:external-port/ui`访问。不过实测网页为一片空白，不知道出了什么问题。
 
+可以在特定文件夹下放置`.yaml`配置文件，然后运行`clash -d . -f xxx.yaml`
+
 由于一些程序和shell不会走系统代理，因此下载`proxychains`，并修改配置文件
 
 ```shell

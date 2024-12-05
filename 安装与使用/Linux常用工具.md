@@ -6,7 +6,7 @@
 
 ## 搜索类
 
-进入搜索模式：按`/`，回车确定后按`n`跳到下一个
+进入搜索模式：按`/`，回车确定后按`n`跳到下一个，按`N`跳到上一个
 
 不区分大小写：在命令模式输入`:set ignorecase`
 
@@ -26,9 +26,9 @@
 
 查看会话：`tmux ls`
 
-进入会话：`tmux attach -t [session-name]`
+进入会话：`tmux attach -t [session-name]`或者`tmux a -t [session-name]`
 
-删除会话：`tmux kill-session -t [session-name]`
+删除会话：`tmux kill-session -t [session-name]`或者`tmux kill-ses -t [session-name]`
 
 设置滚轮滚动窗口：`Ctrl+b -> :`打开命令模式，输入`set -g mouse on`  
 
