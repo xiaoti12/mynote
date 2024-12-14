@@ -15,14 +15,11 @@ sh -c "$(wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install
 ![image-20240602202520599](C:\Users\xiaoti\AppData\Roaming\Typora\typora-user-images\image-20240602202520599.png)
 
 ## 插件
-安装历史自动补全：`git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-autosuggestions`
+### 安装历史自动补全
+`git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git ${ZSH_CUSTOM:-${ZSH:-~/.oh-my-zsh}/custom}/plugins/zsh-autosuggestions`
 
-在`~/.zshrc`中修改：
+`~/.zshrc`的`plugins`添加项：`zsh-autosuggestions`
+### 安装shell高亮提醒
+`git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 
-```shell
-plugins=(
-	git
-	zsh-autosuggestions // 添加
-)
-```
-
+`~/.zshrc`的`plugins`添加项：`zsh-syntax-highlighting`
